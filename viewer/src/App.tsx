@@ -18,7 +18,8 @@ import {
 import forumDataJson from '../../forum_data.json'
 import { Board, ForumData } from './types';
 import { ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
-import { BoardTable } from './components/BoardTable/BoardTable.component';
+import { BoardTable } from './components/BoardTable.component';
+import { Header } from './components/Header.compontent';
 
 function App() {
   const forumData = forumDataJson as ForumData;
@@ -27,19 +28,7 @@ function App() {
 
   return (
     <Container maxW="container.xl" py={8}>
-        <HStack justify="space-between" alignItems="center">
-          <Box>
-            <Heading as="h1" size="2xl">
-              223 Historical Archives
-            </Heading>
-            <Text>Unproudly vibe coded by antican</Text>
-          </Box>
-          <Box>
-            <Text>Crawled at {new Date(forumData.crawled_at).toLocaleString()}</Text>
-            <Text>{forumData.stats.boards_discovered} boards, {forumData.stats.threads_discovered} threads, {forumData.stats.comments_extracted} comments</Text>
-          </Box>
-        </HStack>
-        <Divider marginY={4} />
+        <Header stats={forumData.stats} crawledAt={forumData.crawled_at} />
         <BoardTable boards={forumData.boards} />
     </Container>
   )

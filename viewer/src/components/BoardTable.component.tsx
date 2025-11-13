@@ -1,6 +1,6 @@
 import { ExternalLinkIcon, ViewIcon } from "@chakra-ui/icons";
 import { Tooltip, Link, Heading, Table, Thead, Tr, Th, Tbody, Td, Box } from "@chakra-ui/react";
-import { Board } from "../../types";
+import { Board } from "../types";
 
 export const BoardTable = ({ boards }: { boards: Board[] }) => {
 
