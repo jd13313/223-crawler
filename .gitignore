@@ -1,7 +1,9 @@
 # Scrapy
 .scrapy/
 httpcache/
-*.json
+archives/
+223-archive-*.json
+output*.json
 *.jsonl
 *.csv
 *.xml

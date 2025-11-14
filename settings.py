@@ -35,25 +35,8 @@ DEFAULT_REQUEST_HEADERS = {
     'Accept-Language': 'en',
 }
 
-# Enable or disable spider middlewares
-#SPIDER_MIDDLEWARES = {
-#    '223crawler.middlewares.CrawlerSpiderMiddleware': 543,
-#}
-
-# Enable or disable downloader middlewares
-#DOWNLOADER_MIDDLEWARES = {
-#    '223crawler.middlewares.CrawlerDownloaderMiddleware': 543,
-#}
-
-# Enable or disable extensions
-#EXTENSIONS = {
-#    'scrapy.extensions.telnet.TelnetConsole': None,
-#}
-
-# Configure item pipelines
-#ITEM_PIPELINES = {
-#    '223crawler.pipelines.CrawlerPipeline': 300,
-#}
+# Note: This spider uses a custom data structure (self.forum_data) instead of
+# yielding items, so item pipelines are not used.
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 AUTOTHROTTLE_ENABLED = True
@@ -62,7 +45,8 @@ AUTOTHROTTLE_MAX_DELAY = 10
 AUTOTHROTTLE_TARGET_CONCURRENCY = 2.0
 AUTOTHROTTLE_DEBUG = False
 
-# Enable and configure HTTP caching (disabled by default)
+# HTTP caching is ENABLED during crawls for efficiency
+# Cache is cleared BEFORE each run by run_crawler.sh to ensure fresh data
 HTTPCACHE_ENABLED = True
 HTTPCACHE_EXPIRATION_SECS = 86400  # 24 hours
 HTTPCACHE_DIR = 'httpcache'

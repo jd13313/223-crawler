@@ -3,24 +3,40 @@
 # Tapatalk Forum Crawler Runner Script
 # This script provides easy ways to run the crawler with common configurations
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
 echo "================================"
 echo "223 Tapatalk Forum Crawler"
 echo "================================"
 echo ""
+
+# Activate virtual environment if it exists
+if [ -d "venv" ]; then
+    echo "Activating virtual environment..."
+    source venv/bin/activate
+else
+    echo "⚠️  Warning: Virtual environment not found."
+    echo "   Run: python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+    exit 1
+fi
 
 # Function to display help
 show_help() {
     echo "Usage: ./run_crawler.sh [option]"
     echo ""
     echo "Options:"
-    echo "  1, basic       - Basic crawl, output to JSON"
-    echo "  2, jsonl       - Output to JSON Lines format (better for large datasets)"
-    echo "  3, debug       - Run with debug logging"
-    echo "  4, fast        - Faster crawl (less polite, use carefully)"
-    echo "  5, slow        - Slower, more respectful crawl"
-    echo "  6, stats       - Run with statistics pipeline enabled"
-    echo "  7, test        - Test run (max 10 requests)"
+    echo "  full (default) - Full crawl of entire forum"
+    echo "  test           - Test crawl (only 10 pages)"
+    echo "  debug          - Full crawl with debug logging"
+    echo "  slow           - Slower crawl (3s delay, more polite)"
     echo "  help           - Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./run_crawler.sh          # Runs full crawl"
+    echo "  ./run_crawler.sh test     # Quick test"
+    echo "  ./run_crawler.sh debug    # Debug mode"
     echo ""
 }
 
@@ -31,56 +47,50 @@ if ! command -v scrapy &> /dev/null; then
     exit 1
 fi
 
-# Parse command line argument
-OPTION="${1:-basic}"
+# Parse command line argument (default to full)
+OPTION="${1:-full}"
 
 case $OPTION in
-    1|basic)
-        echo "Running basic crawl..."
-        echo "Output: output.json"
-        echo "Note: robots.txt is disabled for archival purposes"
-        scrapy runspider 223crawl.py -o output.json -s ROBOTSTXT_OBEY=False
-        ;;
-    2|jsonl)
-        echo "Running crawl with JSON Lines output..."
-        echo "Output: output.jsonl"
-        scrapy runspider 223crawl.py -o output.jsonl -s ROBOTSTXT_OBEY=False
-        ;;
-    3|debug)
-        echo "Running with debug logging..."
-        echo "Output: output_debug.json"
-        scrapy runspider 223crawl.py -o output_debug.json -s ROBOTSTXT_OBEY=False --loglevel=DEBUG
-        ;;
-    4|fast)
-        echo "Running faster crawl (reduced delays)..."
-        echo "Output: output_fast.json"
-        echo "WARNING: This may be considered less polite to the server"
-        scrapy runspider 223crawl.py -o output_fast.json \
+    full)
+        echo "Clearing cache for fresh data..."
+        rm -rf httpcache/ .scrapy/httpcache/
+        echo "Running FULL crawl of entire forum..."
+        echo "Output: archives/223-archive-<timestamp>.json"
+        echo "Note: This will take several minutes"
+        scrapy runspider 223crawl.py \
             -s ROBOTSTXT_OBEY=False \
-            -s DOWNLOAD_DELAY=0.5 \
-            -s CONCURRENT_REQUESTS_PER_DOMAIN=4
+            -s LOG_LEVEL=INFO
         ;;
-    5|slow)
-        echo "Running slower, more respectful crawl..."
-        echo "Output: output_slow.json"
-        scrapy runspider 223crawl.py -o output_slow.json \
-            -s ROBOTSTXT_OBEY=False \
-            -s DOWNLOAD_DELAY=3 \
-            -s CONCURRENT_REQUESTS_PER_DOMAIN=1
-        ;;
-    6|stats)
-        echo "Running with statistics pipeline..."
-        echo "Output: output_with_stats.json"
-        scrapy runspider 223crawl.py -o output_with_stats.json \
-            -s ROBOTSTXT_OBEY=False \
-            -s ITEM_PIPELINES='{"pipelines.StatsPipeline": 100}'
-        ;;
-    7|test)
+    test)
+        echo "Clearing cache for fresh data..."
+        rm -rf httpcache/ .scrapy/httpcache/
         echo "Running test crawl (limited to 10 requests)..."
         echo "Output: output_test.json"
         scrapy runspider 223crawl.py -o output_test.json \
             -s ROBOTSTXT_OBEY=False \
             -s CLOSESPIDER_PAGECOUNT=10
+        ;;
+    debug)
+        echo "Clearing cache for fresh data..."
+        rm -rf httpcache/ .scrapy/httpcache/
+        echo "Running FULL crawl with DEBUG logging..."
+        echo "Output: archives/223-archive-<timestamp>.json"
+        echo "Note: This will be VERY verbose"
+        scrapy runspider 223crawl.py \
+            -s ROBOTSTXT_OBEY=False \
+            -s LOG_LEVEL=DEBUG
+        ;;
+    slow)
+        echo "Clearing cache for fresh data..."
+        rm -rf httpcache/ .scrapy/httpcache/
+        echo "Running slower, more polite crawl..."
+        echo "Output: archives/223-archive-<timestamp>.json"
+        echo "Note: 3 second delay between requests"
+        scrapy runspider 223crawl.py \
+            -s ROBOTSTXT_OBEY=False \
+            -s LOG_LEVEL=INFO \
+            -s DOWNLOAD_DELAY=3 \
+            -s CONCURRENT_REQUESTS_PER_DOMAIN=1
         ;;
     help|--help|-h)
         show_help

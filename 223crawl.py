@@ -295,8 +295,9 @@ class TapatalkForumSpider(CrawlSpider):
         self.logger.info(f"   💬 Comments extracted: {self.comments_extracted}")
         self.logger.info(f"   📦 Total in output: {len(boards_list)} boards, {total_threads} threads, {total_comments} comments")
         
-        # Write hierarchical structure to file
-        output_file = 'forum_data.json'
+        # Write hierarchical structure to file with timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        output_file = f'archives/223-archive-{timestamp}.json'
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump({
                 'forum': '223',

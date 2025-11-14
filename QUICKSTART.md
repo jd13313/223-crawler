@@ -1,182 +1,281 @@
 # Quick Start Guide
 
-## 🚀 Get Started in 3 Steps
+## 🚀 Get Started in 2 Steps
 
-### 1. Verify Installation
+### 1. Setup (First Time Only)
 
-Make sure Scrapy is installed (it looks like it already is in your venv):
+Make sure you have the virtual environment set up:
 
 ```bash
-scrapy version
-```
-
-If not installed:
-```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Your First Crawl
+### 2. Run the Crawler
 
-**Option A: Using the convenience script**
+The convenience script handles everything (auto-activates venv):
+
+```bash
+./run_crawler.sh full
+```
+
+That's it! The crawler will output to `archives/223-archive-<timestamp>.json` when complete.
+
+Example: `archives/223-archive-2025-11-13-14-30-45.json`
+
+---
+
+## 🌐 Archive API Server
+
+Start a lightweight web server to browse your archives via JSON API:
+
+```bash
+./start_server.sh
+```
+
+**Available endpoints:**
+- `http://localhost:5000/` - API documentation
+- `http://localhost:5000/archives` - List all archives with metadata
+- `http://localhost:5000/archives/latest` - Get the most recent archive
+- `http://localhost:5000/archives/<filename>` - Get specific archive file
+- `http://localhost:5000/stats` - Aggregate statistics across all archives
+
+**Example usage:**
+```bash
+# List all archives
+curl http://localhost:5000/archives | python3 -m json.tool
+
+# Get latest archive
+curl http://localhost:5000/archives/latest > latest.json
+
+# View stats
+curl http://localhost:5000/stats
+```
+
+---
+
+## 📊 Output Structure
+
+The crawler produces a hierarchical JSON structure:
+
+```json
+{
+  "stats": {
+    "boards": 10,
+    "threads": 150,
+    "comments": 2500
+  },
+  "boards": [
+    {
+      "board_name": "223 Remington",
+      "board_url": "...",
+      "threads": [
+        {
+          "thread_title": "Wild 223 appears!",
+          "thread_url": "...",
+          "comments": [
+            {
+              "author": "John",
+              "content": "...",
+              "post_date": "2024-01-15",
+              "post_id": "p12345"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Hierarchy:** `BOARD → THREAD → COMMENTS`
+
+---
+
+## 🎯 Common Commands
+
+### Full Crawl (Default)
+```bash
+./run_crawler.sh        # Same as: ./run_crawler.sh full
+```
+✅ **Recommended** - Clears cache, then crawls entire forum
+
+### Test Crawl
 ```bash
 ./run_crawler.sh test
 ```
+Quick test (only 10 pages) with cache cleared
 
-**Option B: Direct Scrapy command**
+### Debug Mode
 ```bash
-scrapy crawl 223_fetcher -o output.json -s CLOSESPIDER_PAGECOUNT=10
+./run_crawler.sh debug
 ```
+Full crawl with verbose DEBUG logging
 
-### 3. Check the Output
-
-```bash
-cat output.json | python -m json.tool | head -50
-```
-
-## 📊 What Gets Collected
-
-The crawler extracts:
-
-- **Boards**: Forum sections/categories
-- **Threads**: Discussion topics with:
-  - Title and URL
-  - All posts in order
-  - Post metadata (author, date, content)
-  - User information (avatar, rank)
-  - Engagement data (likes/reactions)
-
-## 🎯 Common Use Cases
-
-### Full Crawl
-```bash
-scrapy crawl 223_fetcher -o full_forum_data.json
-```
-
-### Export to CSV for Analysis
-```bash
-scrapy crawl 223_fetcher -o forum_data.csv
-```
-
-### Slower, Respectful Crawl
+### Slow/Polite Mode
 ```bash
 ./run_crawler.sh slow
 ```
+Full crawl with 3-second delays (more polite to server)
 
-### With Statistics
+### Help
 ```bash
-./run_crawler.sh stats
+./run_crawler.sh help
 ```
 
-## 🔍 Debugging Tips
+---
 
-### View What's Being Crawled
+## 🔍 Checking Your Data
+
+### View Stats
 ```bash
-scrapy crawl 223_fetcher --loglevel=INFO
+# Use the latest archive file
+python3 << 'EOF'
+import json
+import glob
+
+# Get the most recent archive
+files = sorted(glob.glob('archives/223-archive-*.json'))
+latest = files[-1] if files else None
+
+if latest:
+    data = json.load(open(latest))
+    print(f"📁 File: {latest}")
+    print(f"📊 Boards: {data['stats']['boards']}")
+    print(f"📝 Threads: {data['stats']['threads']}")
+    print(f"💬 Comments: {data['stats']['comments']}")
+else:
+    print("No archive files found!")
+EOF
 ```
 
-### Test a Specific URL
+### Pretty Print JSON
 ```bash
-scrapy parse --spider=223_fetcher "https://www.tapatalk.com/groups/223/forums/some-board/"
+# View the latest archive
+ls -t archives/223-archive-*.json | head -1 | xargs cat | python3 -m json.tool | less
 ```
 
-### Check Scrapy Shell (Interactive)
+### Count Threads Per Board
 ```bash
-scrapy shell "https://www.tapatalk.com/groups/223"
+python3 << 'EOF'
+import json
+import glob
+
+# Get the most recent archive
+files = sorted(glob.glob('archives/223-archive-*.json'))
+if files:
+    data = json.load(open(files[-1]))
+    for board in data['boards']:
+        print(f"{board['board_name']}: {len(board['threads'])} threads")
+EOF
 ```
 
-Then try selectors:
-```python
-response.css('a.forumtitle::attr(href)').getall()
-response.css('.post').getall()
+### Using the API Server (Easier!)
+```bash
+# Start the server first
+./start_server.sh
+
+# Then in another terminal, query the API
+curl http://localhost:5000/stats | python3 -m json.tool
 ```
+
+---
 
 ## ⚙️ Customization
 
 ### Adjust Crawl Speed
 
-Edit `settings.py`:
-```python
-DOWNLOAD_DELAY = 2  # seconds between requests
-CONCURRENT_REQUESTS_PER_DOMAIN = 1  # parallel requests
+Use the built-in slow mode:
+```bash
+./run_crawler.sh slow   # 3 second delay between requests
 ```
 
-### Enable Pipelines
-
-Edit `settings.py` and uncomment:
+Or edit `settings.py` for custom settings:
 ```python
-ITEM_PIPELINES = {
-    'pipelines.DuplicateFilterPipeline': 200,
-    'pipelines.DataCleaningPipeline': 300,
-    'pipelines.StatsPipeline': 400,
-}
+DOWNLOAD_DELAY = 2  # Seconds between requests
+CONCURRENT_REQUESTS_PER_DOMAIN = 1  # Parallel requests
 ```
 
-### Modify Selectors
+### Debug Issues
 
-If the crawler isn't finding data correctly, you may need to adjust CSS selectors in `223crawl.py`:
+Run with debug logging:
+```bash
+./run_crawler.sh debug
+```
 
-1. Open the forum in your browser
-2. Right-click → Inspect Element
-3. Find the correct CSS classes
-4. Update the selectors in the spider
+### Manual Scrapy Command
 
-Common places to check:
-- Board links: Line 47-50
-- Thread links: Line 79-82
-- Post content: Line 150-180
+If you need full control:
+```bash
+source venv/bin/activate
+scrapy runspider 223crawl.py -s ROBOTSTXT_OBEY=False -s LOG_LEVEL=INFO
+```
 
-## 📁 Output Files
-
-The crawler creates:
-- `output.json` - Full data in JSON format
-- `output.jsonl` - JSON Lines format (one item per line)
-- `httpcache/` - Cached pages (helps during development)
+---
 
 ## 🛑 Stopping a Crawl
 
-Press `Ctrl+C` once to stop gracefully (saves partial data)
+- **Ctrl+C once** - Graceful stop (saves data collected so far)
+- **Ctrl+C twice** - Force stop
 
-Press `Ctrl+C` twice to force stop
+---
 
-## 📝 Next Steps
+## 📁 Files Explained
 
-1. Run a test crawl: `./run_crawler.sh test`
-2. Inspect the output: `cat output_test.json`
-3. Adjust selectors if needed (check browser DevTools)
-4. Run a full crawl: `./run_crawler.sh basic`
-5. Process the data with your favorite tools!
+- `223crawl.py` - Main spider (defines crawl logic)
+- `settings.py` - Scrapy configuration
+- `run_crawler.sh` - Convenience script to run crawler
+- `start_server.sh` - Convenience script to start API server
+- `server.py` - Lightweight Flask API server for archives
+- `archives/` - Directory containing all archive JSON files
+- `httpcache/` - Cached HTTP responses (speeds up re-runs)
+- `scrapy.cfg` - Scrapy project config
 
-## ⚠️ Important Notes
+---
 
-- The crawler respects `robots.txt` by default
-- Be respectful: don't crawl too fast
-- Some data may require login (not currently supported)
-- Check the forum's Terms of Service before crawling
+## 💡 Tips
+
+- **Start small**: Use `./run_crawler.sh test` to verify everything works
+- **Default behavior**: Just run `./run_crawler.sh` for a full crawl (no options needed!)
+- **Cache management**: Cache is cleared before each run, then used during the crawl for efficiency
+- **Monitor progress**: Watch the logs for "Threads discovered/completed" counters
+- **Be polite**: Use `./run_crawler.sh slow` if you're concerned about server load
+
+---
 
 ## 🐛 Common Issues
 
-**"No data extracted"**
-- CSS selectors may need adjustment
-- Try running with `--loglevel=DEBUG`
-- Use Scrapy shell to test selectors
+### "Virtual environment not found"
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-**"Connection refused"**
-- Server may be blocking requests
-- Try increasing `DOWNLOAD_DELAY`
-- Check if you need authentication
-
-**"Permission denied: run_crawler.sh"**
+### "Permission denied: run_crawler.sh"
 ```bash
 chmod +x run_crawler.sh
 ```
 
-## 💡 Tips
+### "Scrapy is not installed"
+Make sure you activated the venv:
+```bash
+source venv/bin/activate
+```
 
-- Start with small test runs before full crawls
-- Use JSON Lines (`.jsonl`) for large datasets
-- Monitor the logs for errors
-- Enable HTTP cache during development
-- Consider adding rate limiting in production
+### No data extracted
+The forum structure may have changed. Check CSS selectors in `223crawl.py`.
+
+---
+
+## ⚠️ Important Notes
+
+- The crawler **disables** `robots.txt` by default (assuming you own the forum)
+- Be respectful: default is 1 second between requests
+- HTTP caching is enabled (24 hour expiration)
+- The spider builds data in memory, outputs at the end
+
+---
 
 Happy crawling! 🕷️
-
