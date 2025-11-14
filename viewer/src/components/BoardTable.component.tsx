@@ -14,6 +14,7 @@ import {
 import { Board } from "../types";
 
 export const BoardTable = ({ boards }: { boards: Board[] }) => {
+
   const renderBoardActions = (board: Board) => {
     const actions = [
       {
@@ -29,7 +30,7 @@ export const BoardTable = ({ boards }: { boards: Board[] }) => {
     ];
 
     return actions.map((action) => (
-      <Tooltip label={action.label}>
+      <Tooltip key={action.label} label={action.label}>
         <Link href={action.href} target="_blank" marginX={2}>
           {action.icon}
         </Link>
@@ -52,8 +53,8 @@ export const BoardTable = ({ boards }: { boards: Board[] }) => {
           </Tr>
         </Thead>
         <Tbody>
-          {boards.map((board) => (
-            <Tr key={board.board_name}>
+          {!!boards.length && boards.map((board) => (
+            <Tr key={board.board_url}>
               <Td>{renderBoardActions(board)}</Td>
               <Td>{board.board_name}</Td>
               <Td>{board.threads.length}</Td>
