@@ -37,3 +37,12 @@ export interface ForumData {
     stats: ForumStats;
     boards: Board[];
 }
+
+export interface Archive {
+    filename: string;
+    filepath: string;
+    size_bytes: number;
+    size_mb: number;
+    crawled_at: string;
+    stats: ForumStats;
+}

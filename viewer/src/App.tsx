@@ -1,37 +1,57 @@
 import {
+  Center,
   Container,
-  Heading,
+  Spinner,
   Text,
-  Box,
-  Divider,
-  HStack,
-  VStack,
-  Table,
-  Thead,
-  Tr,
-  Th,
-  Td,
-  Tbody,
-  Link,
-  Tooltip,
 } from '@chakra-ui/react'
-import forumDataJson from '../../forum_data.json'
-import { Board, ForumData } from './types';
-import { ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
+
+import { Archive, ForumData } from './types';
 import { BoardTable } from './components/BoardTable.component';
 import { Header } from './components/Header.compontent';
+import { useEffect, useState } from 'react';
 
 function App() {
-  const forumData = forumDataJson as ForumData;
+  const [archives, setArchives] = useState<Archive[] | null>(null);
+  const [selectedArchive, setSelectedArchive] = useState<Archive | null>(null);
+  const [forumData, setForumData] = useState<ForumData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!archives) {
+      fetch('http://localhost:5000/archives')
+        .then(response => response.json())
+        .then(data => setArchives(data.archives))
+        .then(() => setIsLoading(false))
+        .catch(error => console.error('Error fetching forum data:', error));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedArchive) {
+      fetch(`http://localhost:5000/archives/${selectedArchive.filename}`)
+      .then(response => response.json())
+      .then(data => setForumData(data))
+      .then(() => setIsLoading(false))
+      .catch(error => console.error('Error fetching forum data:', error));
+    }
+  }, [selectedArchive]);
 
 
-
-  return (
-    <Container maxW="container.xl" py={8}>
-        <Header stats={forumData.stats} crawledAt={forumData.crawled_at} />
-        <BoardTable boards={forumData.boards} />
-    </Container>
-  )
+    return (
+      <Container maxW="100vw" h="100vh" py={8}>
+        {isLoading && (
+          <Center>
+            <Spinner size="xl" />
+          </Center>
+        )}
+        {archives && (
+          <Header archives={archives} setSelectedArchive={setSelectedArchive} />
+        )}
+        {forumData && (
+          <BoardTable boards={forumData.boards} />
+        )}
+      </Container> 
+    )
 }
 
 export default App

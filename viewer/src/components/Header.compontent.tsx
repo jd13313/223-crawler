@@ -1,7 +1,16 @@
-import { Divider, Box, Text, Heading, HStack } from "@chakra-ui/react"
-import { ForumData, ForumStats } from "../types"
+import { Divider, Box, Text, Heading, Select,HStack, VStack } from "@chakra-ui/react"
+import { Archive } from "../types"
+import { useCallback } from "react";
 
-export const Header = ({ stats, crawledAt }: { stats: ForumStats, crawledAt: string }) => { 
+export const Header = ({ archives, setSelectedArchive }: { archives: Archive[], setSelectedArchive: (archive: Archive) => void }) => { 
+    
+    const handleArchiveSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedArchive = archives.find((archive) => archive.filename === event.target.value);
+        if (selectedArchive) {
+            setSelectedArchive(selectedArchive);
+        }
+    }, [archives, setSelectedArchive]);
+
     return (
         <>
             <HStack justify="space-between" alignItems="center">
@@ -9,15 +18,22 @@ export const Header = ({ stats, crawledAt }: { stats: ForumStats, crawledAt: str
                 <Heading as="h1" size="2xl">
                     223 Historical Archives
                 </Heading>
-                <Text>Unproudly vibe coded by antican</Text>
             </Box>
             <Box>
-                <Text>Crawled at {new Date(crawledAt).toLocaleString()}</Text>
-                <Text>
-                    {stats.boards_discovered} boards, {` `}
-                    {stats.threads_discovered} threads, {` `}
-                    {stats.comments_extracted} comments
-                </Text>
+                <VStack align="flex-start">
+                    <Text fontSize="sm" color="gray.500" fontWeight="900">Select An Archive</Text>
+
+                    <Select onChange={handleArchiveSelect}>
+                        {archives.map((archive) => {
+                            const prettyDate = new Date(archive.crawled_at).toLocaleString();
+                            const label = `${prettyDate} - ${archive.stats.boards} boards, ${archive.stats.threads} threads, ${archive.stats.comments} comments`;
+                            
+                            return (
+                                <option key={archive.crawled_at} value={archive.filename}>{label}</option>
+                            )
+                        })}
+                    </Select>
+                </VStack>
             </Box>
             </HStack>
             <Divider marginY={4} />
